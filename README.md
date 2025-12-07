@@ -1,57 +1,55 @@
-# 🎨 Approssimazione RGB to Grayscale (RGB2GRAY) con Somme di Potenze di Due
+# 🎨 RGB to Grayscale Approximation (RGB2GRAY) with Sums of Powers of Two
 
-Questo progetto implementa una conversione da un'immagine a colori RGB a un'immagine in scala di grigi (**Grayscale**) ottimizzata per l'**hardware** (FPGA o ASIC) utilizzando approssimazioni basate su **somme di potenze di due** e un meccanismo dedicato per la **gestione del resto (remainder handling)**.
+This project implements an optimized **RGB color to Grayscale** image conversion suitable for **hardware** (FPGA or ASIC) using approximations based on **sums of powers of two** and a dedicated mechanism for **remainder handling**.
 
-## 🌟 Obiettivo del Progetto
+## 🌟 Project Goal
 
-L'obiettivo principale era sviluppare un algoritmo efficiente per la conversione RGB2GRAY che potesse essere implementato con sole operazioni di **shift a destra (right shift)** e **somma (addition)**, evitando le costose moltiplicazioni. Questo è stato ottenuto approssimando i coefficienti di luminanza standard ai valori più vicini espressi come somme di frazioni $1/2^n$.
+The primary goal was to develop an efficient RGB2GRAY conversion algorithm that could be implemented using only **right shift** and **addition** operations, thereby avoiding costly multiplications. This was achieved by approximating the standard luminance coefficients to the closest values expressible as sums of $1/2^n$ fractions.
 
-***
+---
 
-## ⚙️ Formula e Approssimazione
+## ⚙️ Formula and Approximation
 
-La formula standard per la conversione alla scala di grigi è:
+The standard formula for grayscale conversion is:
 
 $$
 \text{Gray}_{\text{pixel}} = 0.299 \cdot \text{Pix}_R + 0.587 \cdot \text{Pix}_G + 0.114 \cdot \text{Pix}_B
 $$
 
-Per l'ottimizzazione hardware, i coefficienti sono stati approssimati come somme di potenze di due:
+For hardware optimization, the coefficients were approximated as sums of powers of two:
 
-| Canale | Coefficiente Reale | Approssimazione (Somma di Potenze di Due) | Valore Approssimato | Errore di Stima |
+| Channel | Real Coefficient | Approximation (Sum of Powers of Two) | Approximated Value | Estimation Error |
 | :---: | :---: | :---: | :---: | :---: |
-| **Rosso (R)** | 0.299 | $\frac{1}{4} + \frac{1}{32} + \frac{1}{64}$ | 0.296875 | 0.2125% (sottostima)|
-| **Verde (G)** | 0.587 | $\frac{1}{2} + \frac{1}{16} + \frac{1}{64} + \frac{1}{128}$ | 0.5859375 | 0.10625% (sottostima) |
-| **Blu (B)** | 0.114 | $\frac{1}{16} + \frac{1}{32} + \frac{1}{64} + \frac{1}{128}$ | 0.1171875 | 0.31875% (sovrastima) |
+| **Red (R)** | 0.299 | $\frac{1}{4} + \frac{1}{32} + \frac{1}{64}$ | 0.296875 | 0.2125% (underestimation)|
+| **Green (G)** | 0.587 | $\frac{1}{2} + \frac{1}{16} + \frac{1}{64} + \frac{1}{128}$ | 0.5859375 | 0.10625% (underestimation) |
+| **Blue (B)** | 0.114 | $\frac{1}{16} + \frac{1}{32} + \frac{1}{64} + \frac{1}{128}$ | 0.1171875 | 0.31875% (overestimation) |
 
-**Nota Importante:** La somma dei coefficienti reali ($0.299 + 0.587 + 0.114$) è pari a **1**, così come la somma delle approssimazioni in potenze di due.
+**Important Note:** The sum of the real coefficients ($0.299 + 0.587 + 0.114$) equals **1**, as does the sum of the power-of-two approximations.
 
-***
+---
 
-## 🧮 Gestione del Resto (Remainder Handling)
+## 🧮 Remainder Handling
 
-]L'approccio basato sui soli shift comporta l'introduzione di un errore dovuto al **troncamento** (semplice taglio del vettore) dei risultati. L'obiettivo della gestione del resto è correggere l'errore risultante dall'approssimazione mediante un'analisi del resto.
+The shift-only approach inherently introduces an error due to **truncation** (simply cutting the vector) of the results. The purpose of remainder handling is to correct the resulting approximation error through an analysis of the remainder bits.
 
-**Concetto di base:**
-Il metodo non scarta i resti, ma li salva, li sposta in un vettore dedicato e li somma tra loro. Questa somma dei resti frazionari (ad es. $0.5 + 0.4 + 0.2 = 1.1$) determina se una cifra intera (`+1`) debba essere aggiunta al calcolo finale.
+**Core Concept:**
+The method does not discard the remainder bits; instead, it saves them, shifts them into a dedicated vector, and sums them together. This summation of fractional remainders (e.g., $0.5 + 0.4 + 0.2 = 1.1$) determines whether an integer carry (`+1`) should be added to the final calculation.
 
-Questo processo è implementato attraverso operazioni logiche che estraggono il resto (i bit meno significativi persi durante lo shift) e lo riallineano per la somma successiva.
+This process is implemented using logic operations that extract the remainder (the least significant bits lost during the shift) and realign them for subsequent summation.
 
+---
 
+## ⚡ Results and Performance
 
-***
+The final implementation demonstrated high performance with optimized resource utilization:
 
-## ⚡ Risultati e Prestazioni
+* **Pipeline Stages:** 10 total pipeline stages.
+* **Clock Period:** Operates at a **2.9 ns** clock period.
+* **Hardware Used:** Only a few pipeline registers, **seven 8-bit Carry-save** (four-operand) and **two 8-bit Adders**.
+* **Accuracy:** The error on any given pixel remains between **-1 and +1**.
 
-L'implementazione finale ha dimostrato prestazioni elevate con un utilizzo ottimizzato delle risorse:
+---
 
-* **Livelli di Pipeline:** 10 livelli di pipeline in totale.
-* **Periodo di Clock:** Funziona a **2.9 ns** di periodo di clock.
-* **Hardware Utilizzato:** Solo alcuni registri di pipeline, **sette 8-bit Carry-save** (a quattro operandi) e **due 8-bit Adder**.
-* **Accuratezza:** L'errore su ogni pixel rimane compreso tra **-1 e +1**.
+## 👤 Author
 
-***
-
-## 👤 Autore
-
-**Raffaele Petrolo** 
+**Raffaele Petrolo**
